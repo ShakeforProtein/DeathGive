@@ -1,0 +1,7 @@
+Rewards:
+  group1:
+    permission: deathgive.donator
+    items:
+      - DIAMOND,1
+      - IRON_INGOT,1
+CooldownInSeconds: 300

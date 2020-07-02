@@ -1,0 +1,6 @@
+name: DeathGive
+version: ${project.version}
+main: me.shakeforprotein.deathgive.DeathGive
+api-version: 1.13
+authors: [ShakeforProtein]
+description: Gives players item rewards on respawn based on permission node.
