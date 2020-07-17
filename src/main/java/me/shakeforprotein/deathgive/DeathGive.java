@@ -5,6 +5,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -19,7 +20,9 @@ import java.util.List;
 
 public final class DeathGive extends JavaPlugin implements Listener {
 
-    HashMap<Player, Long> cooldownHash = new HashMap<>();
+    private HashMap<Player, Long> cooldownHash = new HashMap<>();
+    private List<Player> deadPlayers = new ArrayList<>();
+
     @Override
     public void onEnable() {
         // Plugin startup logic
@@ -48,25 +51,33 @@ public final class DeathGive extends JavaPlugin implements Listener {
 
 
     @EventHandler
+    public void playerDieEvent(PlayerDeathEvent e){
+        deadPlayers.add(e.getEntity());
+    }
+
+    @EventHandler
     public void playerRespawnEvent(PlayerRespawnEvent e) {
-        if (!cooldownHash.containsKey(e.getPlayer()) || (cooldownHash.containsKey(e.getPlayer()) && cooldownHash.get(e.getPlayer()) < (System.currentTimeMillis() - (getConfig().getInt("CooldownInSeconds") * 1000)))) {
-            for (String group : getConfig().getConfigurationSection("Rewards").getKeys(false)) {
-                if (getConfig().getString("Rewards." + group + ".permission") != null) {
-                    if (e.getPlayer().hasPermission(getConfig().getString("Rewards." + group + ".permission"))) {
-                        if (getConfig().getStringList("Rewards." + group + ".items") != null) {
-                            List<String> itemRewards = getConfig().getStringList("Rewards." + group + ".items");
-                            for (String reward : itemRewards) {
-                                ItemStack rewardStack = new ItemStack(Material.valueOf(reward.split(",")[0].toUpperCase()), Integer.parseInt(reward.split(",")[1]));
-                                e.getPlayer().getInventory().addItem(rewardStack);
+        if(deadPlayers != null && deadPlayers.size() > 0 && deadPlayers.contains(e.getPlayer())) {
+            if (!cooldownHash.containsKey(e.getPlayer()) || (cooldownHash.containsKey(e.getPlayer()) && cooldownHash.get(e.getPlayer()) < (System.currentTimeMillis() - (getConfig().getInt("CooldownInSeconds") * 1000)))) {
+                for (String group : getConfig().getConfigurationSection("Rewards").getKeys(false)) {
+                    if (getConfig().getString("Rewards." + group + ".permission") != null) {
+                        if (e.getPlayer().hasPermission(getConfig().getString("Rewards." + group + ".permission"))) {
+                            if (getConfig().getStringList("Rewards." + group + ".items") != null) {
+                                List<String> itemRewards = getConfig().getStringList("Rewards." + group + ".items");
+                                for (String reward : itemRewards) {
+                                    ItemStack rewardStack = new ItemStack(Material.valueOf(reward.split(",")[0].toUpperCase()), Integer.parseInt(reward.split(",")[1]));
+                                    e.getPlayer().getInventory().addItem(rewardStack);
+                                }
+                                cooldownHash.putIfAbsent(e.getPlayer(), System.currentTimeMillis());
                             }
-                            cooldownHash.putIfAbsent(e.getPlayer(), System.currentTimeMillis());
                         }
                     }
                 }
             }
         }
-        else{
-            //e.getPlayer().sendMessage("No Soup for you - " + (cooldownHash.get(e.getPlayer()) - (System.currentTimeMillis() - (60000 * 5))));
+
+        if(deadPlayers != null && deadPlayers.size() > 0 && deadPlayers.contains(e.getPlayer())){
+            deadPlayers.remove(e.getPlayer());
         }
     }
 
